@@ -156,7 +156,9 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         planId: editing.currentPlan?._id ?? '',
         trainerId: editing.trainer?._id ?? '',
         status: editing.status === 'inactive' ? 'inactive' : 'active',
-        membershipStartDate: todayDDMMYYYY(),
+        membershipStartDate: editing.membershipStartDate
+          ? toDDMMYYYY(new Date(editing.membershipStartDate))
+          : todayDDMMYYYY(),
       });
       loadTrainers(editing.branchCode ?? '');
     } else {

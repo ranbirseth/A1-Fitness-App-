@@ -150,6 +150,7 @@ const createPayment = asyncHandler(async (req, res) => {
     invoiceNumber,
     branchCode,
     membershipExpiryDate: scopedMember.membershipExpiryDate || undefined,
+    membershipStartDate: scopedMember.membershipStartDate || undefined,
     invoice: {
       invoiceNumber,
       amount,

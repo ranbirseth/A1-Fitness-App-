@@ -344,7 +344,9 @@ const createMember = asyncHandler(async (req, res) => {
 
   try {
     let plan = null;
-    let startDate = null;
+    // The membership start date is always the admin-selected admission date
+    // (defaulting to today), regardless of whether an initial plan is chosen.
+    const startDate = membershipStartDate ? new Date(membershipStartDate) : new Date();
     let expiryDate = null;
 
     if (wantsPlan) {
@@ -353,7 +355,6 @@ const createMember = asyncHandler(async (req, res) => {
         throw Object.assign(new Error("Plan not found in your gym"), { statusCode: 404 });
       }
       await validatePlanBranchAccess(plan._id, scopedBranchCode, gymId, req.user.role, session);
-      startDate = membershipStartDate ? new Date(membershipStartDate) : new Date();
       expiryDate = calculateExpiry(startDate, plan.duration);
     }
 
@@ -381,7 +382,7 @@ const createMember = asyncHandler(async (req, res) => {
         user: user._id,
         trainer: await resolveValidTrainer(trainerId, scopedBranchCode, gymId),
         currentPlan: wantsPlan ? plan._id : null,
-        membershipStartDate: wantsPlan ? startDate : null,
+        membershipStartDate: startDate,
         membershipExpiryDate: wantsPlan ? expiryDate : null,
         isActivePlan: false,
         status: "pending",
@@ -501,6 +502,7 @@ const fetchMembers = async (req, query, gymId) => {
         gymId: 1,
         branchCode: 1,
         isActivePlan: 1,
+        membershipStartDate: 1,
         membershipExpiryDate: 1,
         status: 1,
         paymentStatus: 1,

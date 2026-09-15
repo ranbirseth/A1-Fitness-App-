@@ -294,7 +294,7 @@ export function MemberDetailsScreen() {
           <DetailItem label="Name" value={member.user?.name || '-'} />
           <DetailItem label="Email" value={member.user?.email || 'Not provided'} />
           <DetailItem label="WhatsApp / Phone" value={member.user?.phone || '-'} />
-          <DetailItem label="Member since" value={formatDate(member.createdAt)} />
+          <DetailItem label="Member since" value={formatDate(member.membershipStartDate)} />
         </Section>
 
         <Section title="Branch">
