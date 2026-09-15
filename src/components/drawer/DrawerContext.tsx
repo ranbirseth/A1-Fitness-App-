@@ -14,6 +14,7 @@ export type DrawerKey =
   | 'Trainers'
   | 'Plans'
   | 'Attendance'
+  | 'Scanners'
   | 'Payments'
   | 'Settings';
 

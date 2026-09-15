@@ -8,10 +8,18 @@ export type AppStackParamList = {
   SuperadminMembers: undefined;
   MemberDetails: { memberId: string };
   SuperadminPlans: undefined;
+  SuperadminAttendance: undefined;
   SuperadminPayments: undefined;
   AdminDashboard: undefined;
   AdminMembers: undefined;
   AdminMemberDetails: { memberId: string };
   AdminPlans: undefined;
   AdminPayments: undefined;
+  AdminAttendance: undefined;
+  ScannerList: undefined;
+  ScannerDetails: { scannerId: string };
+  ScannerForm: { scannerId?: string } | undefined;
+  ScannerIntegration: undefined;
+  ScannerSetup: { scannerId?: string } | undefined;
+  ScannerDetail: { scannerId: string };
 };

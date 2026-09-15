@@ -47,6 +47,12 @@ export interface MemberPlan {
   branchCode?: string | null;
 }
 
+export interface MemberBiometrics {
+  deviceUserId?: string;
+  cardId?: string;
+  fingerprints?: string[];
+}
+
 export interface MemberItem {
   _id: string;
   secretCode?: string;
@@ -62,6 +68,7 @@ export interface MemberItem {
   user?: MemberUser;
   trainer?: MemberTrainer | null;
   currentPlan?: MemberPlan | null;
+  biometrics?: MemberBiometrics;
 }
 
 export interface MemberPage {
@@ -97,6 +104,14 @@ export interface MemberUpdatePayload {
   trainerId?: string | null;
   status?: string;
   branchCode?: string;
+  biometrics?: MemberBiometrics;
+}
+
+export async function updateMemberBiometrics(
+  memberId: string,
+  biometrics: MemberBiometrics
+): Promise<MemberItem> {
+  return updateMember(memberId, { biometrics });
 }
 
 export interface PlanItem {

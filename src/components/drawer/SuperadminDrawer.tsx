@@ -21,7 +21,7 @@ interface NavItemDef {
   key: DrawerKey;
   label: string;
   icon: string;
-  route?: 'SuperadminDashboard' | 'SuperadminBranches' | 'SuperadminAdmins' | 'SuperadminMembers' | 'SuperadminTrainers' | 'SuperadminPlans' | 'SuperadminAttendance' | 'SuperadminPayments' | 'SuperadminSettings';
+  route?: 'SuperadminDashboard' | 'SuperadminBranches' | 'SuperadminAdmins' | 'SuperadminMembers' | 'SuperadminTrainers' | 'SuperadminPlans' | 'SuperadminAttendance' | 'SuperadminPayments' | 'SuperadminSettings' | 'ScannerList';
   enabled: boolean;
 }
 
@@ -31,11 +31,12 @@ const MAIN_ITEMS: NavItemDef[] = [
   { key: 'Admins', label: 'Admins', icon: '👤', route: 'SuperadminAdmins', enabled: true },
   { key: 'Members', label: 'Members', icon: '▤', route: 'SuperadminMembers', enabled: true },
   { key: 'Plans', label: 'Plans', icon: '▧', route: 'SuperadminPlans', enabled: true },
+  { key: 'Attendance', label: 'Attendance', icon: '◆', route: 'SuperadminAttendance', enabled: true },
+  { key: 'Scanners', label: 'Scanners', icon: '▰', route: 'ScannerList', enabled: true },
 ];
 
 const FUTURE_ITEMS: NavItemDef[] = [
   { key: 'Trainers', label: 'Trainers', icon: '▣', enabled: false },
-  { key: 'Attendance', label: 'Attendance', icon: '◆', enabled: false },
 ];
 
 const PAYMENT_ITEMS: NavItemDef[] = [

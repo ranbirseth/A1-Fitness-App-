@@ -505,6 +505,10 @@ function MemberCard({
         <Text style={styles.detailValue}>{member.trainer?.name || 'No trainer'}</Text>
       </View>
       <View style={styles.detailRow}>
+        <Text style={styles.detailLabel}>Start</Text>
+        <Text style={styles.detailValue}>{formatDate(member.membershipStartDate)}</Text>
+      </View>
+      <View style={styles.detailRow}>
         <Text style={styles.detailLabel}>Expiry</Text>
         <Text style={styles.detailValue}>{formatDate(member.membershipExpiryDate)}</Text>
       </View>

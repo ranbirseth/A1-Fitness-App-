@@ -21,7 +21,7 @@ interface NavItemDef {
   key: DrawerKey;
   label: string;
   icon: string;
-  route: 'AdminDashboard' | 'AdminMembers' | 'AdminPlans' | 'AdminPayments';
+  route: 'AdminDashboard' | 'AdminMembers' | 'AdminPlans' | 'AdminPayments' | 'AdminAttendance' | 'ScannerList';
   enabled: boolean;
 }
 
@@ -29,7 +29,9 @@ const MAIN_ITEMS: NavItemDef[] = [
   { key: 'Dashboard', label: 'Dashboard', icon: '▦', route: 'AdminDashboard', enabled: true },
   { key: 'Members', label: 'Members', icon: '▤', route: 'AdminMembers', enabled: true },
   { key: 'Plans', label: 'Plans', icon: '▧', route: 'AdminPlans', enabled: true },
+  { key: 'Attendance', label: 'Attendance', icon: '◆', route: 'AdminAttendance', enabled: true },
   { key: 'Payments', label: 'Payments & Reminders', icon: '₹', route: 'AdminPayments', enabled: true },
+  { key: 'Scanners', label: 'Scanners', icon: '▰', route: 'ScannerList', enabled: true },
 ];
 
 interface Props {

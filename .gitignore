@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# server secrets (Mongo URI, JWT secrets, WhatsApp access token)
+/server/.env
+
 # typescript
 *.tsbuildinfo
 

@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import {
   type PlanItem,
@@ -62,6 +62,7 @@ function formatPrice(price: number): string {
 }
 
 export function SuperadminPlansScreen() {
+  const insets = useSafeAreaInsets();
   const { setActive } = useDrawer();
 
   useEffect(() => {
@@ -483,9 +484,9 @@ export function SuperadminPlansScreen() {
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 28) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>{editing ? 'Edit Plan' : 'Add Plan'}</Text>
               <TouchableOpacity onPress={() => setFormVisible(false)} hitSlop={10}>

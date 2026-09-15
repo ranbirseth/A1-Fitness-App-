@@ -152,13 +152,65 @@ export interface InvoiceData {
   };
 }
 
+export interface ReminderWhatsappError {
+  memberId: string;
+  memberName?: string | null;
+  status: string;
+  reason?: string | null;
+  metaErrorCode?: number | null;
+  metaErrorSubcode?: number | null;
+  normalizedPhone?: string | null;
+}
+
+// Human-readable safe description for a per-member WhatsApp failure. Never
+// contains secrets: only the classified status, the sanitized Meta reason, and
+// the numeric Meta error code/subcode.
+export function describeWhatsappFailure(err: ReminderWhatsappError): string {
+  const hints: Record<string, string> = {
+    invalid_token:
+      'The server WhatsApp access token is invalid or expired. Update WHATSAPP_ACCESS_TOKEN in server/.env and restart the server.',
+    template_not_approved: 'The configured WhatsApp message template is not approved by Meta yet.',
+    template_not_found: 'The configured WhatsApp message template was not found in the Meta Business account.',
+    invalid_phone_number: 'The member phone number is not valid for WhatsApp.',
+    meta_api_error: 'The Meta WhatsApp API rejected the message.',
+    failed: 'The WhatsApp API request failed (network or transport error).',
+  };
+  const hint = hints[err.status];
+  const fixedCode =
+    err.metaErrorCode != null
+      ? ` (Meta code ${err.metaErrorCode}${err.metaErrorSubcode != null ? `/${err.metaErrorSubcode}` : ''})`
+      : '';
+  return `${err.memberName ?? err.memberId}: ${hint ?? err.reason ?? err.status}${fixedCode}`;
+}
+
 export interface ReminderSummary {
   eligible: number;
+  requested?: number;
   inAppSent: number;
+  inAppDuplicateSkipped?: number;
+  inAppSkipped?: number;
   whatsappReady: number;
+  whatsappSent?: number;
+  whatsappFailed?: number;
+  whatsappInvalid?: number;
+  whatsappNotConfigured?: number;
+  whatsappDuplicate?: number;
   whatsappSkipped: number;
   duplicatesSkipped: number;
   whatsappStatus: string;
+  whatsappErrors?: ReminderWhatsappError[];
+  whatsappConfig?: {
+    enabled: boolean;
+    provider: string | null;
+    configured: boolean;
+    hasAccessToken: boolean;
+    hasPhoneNumberId: boolean;
+    hasBusinessAccountId: boolean;
+    apiVersion: string;
+    templateName: string;
+    templateLanguage: string;
+    countryCode: string;
+  };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

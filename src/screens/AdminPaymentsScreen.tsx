@@ -28,6 +28,7 @@ import {
   markAsPaid,
   markAsUnpaid,
   sendReminders,
+  describeWhatsappFailure,
 } from '../api/payments';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -303,14 +304,32 @@ export function AdminPaymentsScreen() {
             try {
               const summary = await sendReminders(branchCode);
               let msg = `${summary.eligible} member(s) due for renewal.\n${summary.inAppSent} in-app reminder(s) sent.`;
+              const wSent = summary.whatsappSent ?? summary.whatsappReady ?? 0;
+              const cfg = summary.whatsappConfig;
+              const wDuplicates = summary.whatsappDuplicate ?? 0;
+              const inAppDups = summary.inAppDuplicateSkipped ?? 0;
               if (summary.whatsappStatus === 'not_configured') {
-                msg += '\n\nWhatsApp provider is not configured on the server.';
+                const cfgBits = [
+                  cfg ? `enabled=${cfg.enabled}` : 'enabled=?',
+                  `provider=${cfg?.provider ?? 'not set'}`,
+                  cfg ? `access token=${cfg.hasAccessToken ? 'present' : 'MISSING'}` : 'access token=?',
+                  cfg ? `phone number id=${cfg.hasPhoneNumberId ? 'present' : 'MISSING'}` : 'phone number id=?',
+                ];
+                msg += `\n\nWhatsApp provider is not configured on the server (${cfgBits.join(', ')}).`;
               } else {
-                msg += `\n${summary.whatsappReady} WhatsApp message(s) sent.\n${summary.whatsappSkipped} skipped (no WhatsApp number).`;
+                msg += `\n${wSent} WhatsApp message(s) sent.`;
+                const wFailed = summary.whatsappFailed ?? 0;
+                const wInvalid = summary.whatsappInvalid ?? 0;
+                if (wFailed > 0) {
+                  msg += `\n${wFailed} WhatsApp send(s) failed.`;
+                  for (const err of summary.whatsappErrors ?? []) {
+                    msg += `\n• ${describeWhatsappFailure(err)}`;
+                  }
+                }
+                if (wInvalid > 0) msg += `\n${wInvalid} member(s) skipped (invalid WhatsApp number).`;
+                if (wDuplicates > 0) msg += `\n${wDuplicates} WhatsApp duplicate(s) skipped.`;
               }
-              if (summary.duplicatesSkipped) {
-                msg += `\n${summary.duplicatesSkipped} duplicate(s) skipped.`;
-              }
+              if (inAppDups > 0) msg += `\n${inAppDups} in-app duplicate(s) skipped.`;
               setReminderResult(msg);
             } catch {
               setReminderResult('Failed to send reminders. Please try again.');

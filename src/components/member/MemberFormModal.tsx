@@ -18,6 +18,7 @@ import {
   View,
 } from 'react-native';
 import { colors } from '../../theme/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BranchItem } from '../../api/branches';
 import {
   type MemberCreatePayload,
@@ -41,6 +42,39 @@ function formatINR(value: number): string {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const DATE_REGEX = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+// Display format used by the Membership Starting Date field, e.g. "15/09/2026".
+function toDDMMYYYY(date: Date): string {
+  return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
+function todayDDMMYYYY(): string {
+  return toDDMMYYYY(new Date());
+}
+
+// Parses "DD/MM/YYYY" into the canonical "YYYY-MM-DD" string expected by the
+// membershipStartDate API, or null when it is not a real calendar date (catches
+// 30/02, month 13, etc.). Date-only strings avoid the backend shifting the day
+// through UTC/local-time conversion.
+function toISODate(ddmmyyyy: string): string | null {
+  const match = DATE_REGEX.exec(ddmmyyyy.trim());
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  if (year < 2000 || year > 2100) return null;
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    return null;
+  }
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
 interface FormValues {
   name: string;
   email: string;
@@ -50,6 +84,7 @@ interface FormValues {
   planId: string;
   trainerId: string;
   status: 'active' | 'inactive';
+  membershipStartDate: string;
 }
 
 function blankForm(): FormValues {
@@ -62,6 +97,7 @@ function blankForm(): FormValues {
     planId: '',
     trainerId: '',
     status: 'active',
+    membershipStartDate: todayDDMMYYYY(),
   };
 }
 
@@ -78,6 +114,7 @@ interface Props {
 }
 
 export function MemberFormModal({ visible, onClose, editing, branches, onSaved, branchCode, requirePassword = true }: Props) {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState<FormValues>(blankForm());
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -119,6 +156,7 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         planId: editing.currentPlan?._id ?? '',
         trainerId: editing.trainer?._id ?? '',
         status: editing.status === 'inactive' ? 'inactive' : 'active',
+        membershipStartDate: todayDDMMYYYY(),
       });
       loadTrainers(editing.branchCode ?? '');
     } else {
@@ -171,6 +209,9 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
     if (!form.branchCode.trim()) {
       next.branchCode = 'Select a branch.';
     }
+    if (!editing && !toISODate(form.membershipStartDate)) {
+      next.membershipStartDate = 'Enter a valid date in DD/MM/YYYY format.';
+    }
     return next;
   }, [form, editing]);
 
@@ -202,6 +243,7 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
           password: form.password.trim(),
           ...(form.email.trim() ? { email: form.email.trim().toLowerCase() } : {}),
           branchCode: form.branchCode.trim().toUpperCase(),
+          membershipStartDate: toISODate(form.membershipStartDate) ?? undefined,
         };
         if (form.planId) payload.planId = form.planId;
         if (form.trainerId) payload.trainerId = form.trainerId;
@@ -222,9 +264,9 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.modalSheet}>
+        <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 28) }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{editing ? 'Edit Member' : 'Add Member'}</Text>
             <TouchableOpacity onPress={onClose} hitSlop={10}>
@@ -324,6 +366,29 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
                 <Text style={styles.fieldError}>{formErrors.branchCode}</Text>
               )}
             </View>
+
+            {!editing && (
+              <View style={styles.field}>
+                <Text style={styles.label}>Membership Starting Date</Text>
+                <TextInput
+                  style={[styles.input, formErrors.membershipStartDate && styles.inputError]}
+                  value={form.membershipStartDate}
+                  onChangeText={(t) => changeField('membershipStartDate', t, 'membershipStartDate')}
+                  placeholder="DD/MM/YYYY"
+                  placeholderTextColor={colors.textFaint}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  maxLength={10}
+                  editable={!submitting}
+                />
+                {formErrors.membershipStartDate && (
+                  <Text style={styles.fieldError}>{formErrors.membershipStartDate}</Text>
+                )}
+                <Text style={styles.hint}>
+                  The day the membership actually starts (defaults to today, e.g. {todayDDMMYYYY()}).
+                </Text>
+              </View>
+            )}
 
             {!editing && (
               <View style={styles.field}>

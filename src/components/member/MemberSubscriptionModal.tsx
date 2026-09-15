@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { colors } from '../../theme/colors';
 import { StatusBadge } from '../StatusBadge';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   type MemberItem,
   type PlanItem,
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export function MemberSubscriptionModal({ visible, onClose, member, onDone, branchCode }: Props) {
+  const insets = useSafeAreaInsets();
   const [plans, setPlans] = useState<PlanItem[]>([]);
   const [loadingPlans, setLoadingPlans] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState('');
@@ -194,9 +196,9 @@ export function MemberSubscriptionModal({ visible, onClose, member, onDone, bran
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.modalOverlay}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.modalSheet}>
+        <View style={[styles.modalSheet, { paddingBottom: Math.max(insets.bottom, 28) }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Subscription</Text>
             <TouchableOpacity onPress={onClose} hitSlop={10}>
