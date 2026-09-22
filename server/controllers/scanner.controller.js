@@ -78,7 +78,7 @@ const updateScanner = asyncHandler(async (req, res) => {
 
   const scanner = await findScannedById(req);
 
-  const allowed = ["name", "brand", "model", "serial", "ipAddress", "port", "protocol", "type", "status", "gates", "settings"];
+  const allowed = ["name", "brand", "model", "serial", "ipAddress", "port", "deviceTimezone", "protocol", "type", "status", "gates", "settings"];
   const updates = {};
   allowed.forEach((field) => {
     if (req.body[field] !== undefined) updates[field] = req.body[field];
@@ -146,6 +146,29 @@ const getSyncPayload = asyncHandler(async (req, res) => {
   });
 });
 
+const pingScanner = asyncHandler(async (req, res) => {
+  const scanner = await findScannedById(req);
+
+  const thresholdMs = Number(process.env.SCANNER_OFFLINE_AFTER_MS || 30000);
+  const lastSeen = scanner.lastSeen instanceof Date ? scanner.lastSeen : null;
+  const ageMs = lastSeen ? Date.now() - lastSeen.getTime() : null;
+  const status = lastSeen && ageMs !== null && ageMs < thresholdMs ? "online" : "offline";
+
+  sendResponse(res, {
+    message: `Scanner reported ${status}`,
+    data: {
+      scannerId: scanner._id,
+      deviceId: scanner.deviceId,
+      serial: scanner.serial || null,
+      branchCode: scanner.branchCode || "MAIN",
+      status,
+      lastSeen: lastSeen ? lastSeen.toISOString() : null,
+      ageMs,
+      thresholdMs
+    }
+  });
+});
+
 module.exports = {
   getScanners,
   createScanner,
@@ -153,5 +176,6 @@ module.exports = {
   updateScanner,
   deleteScanner,
   rotateScannerKey,
-  getSyncPayload
+  getSyncPayload,
+  pingScanner
 };

@@ -71,6 +71,29 @@ export interface MemberItem {
   biometrics?: MemberBiometrics;
 }
 
+/**
+ * Returns true when the member's subscription action (Assign/Renew) should be
+ * available, i.e. when they do NOT already have a healthy current plan that
+ * expires more than 7 days from today.
+ *
+ * Rules:
+ * - No current plan → true (show action)
+ * - isActivePlan explicitly false → true
+ * - membershipExpiryDate missing / invalid → true (preserve access)
+ * - Expiry > 7 days away → false (hide action — subscription is healthy)
+ * - Expiry ≤ 7 days away or already past → true (show action)
+ */
+export function showSubscriptionAction(member: MemberItem): boolean {
+  if (!member.currentPlan) return true;
+  if (member.isActivePlan === false) return true;
+  if (!member.membershipExpiryDate) return true;
+  const expiry = new Date(member.membershipExpiryDate);
+  if (Number.isNaN(expiry.getTime())) return true;
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const daysLeft = (expiry.getTime() - Date.now()) / MS_PER_DAY;
+  return daysLeft <= 7;
+}
+
 export interface MemberPage {
   items: MemberItem[];
   page: number;
@@ -112,6 +135,22 @@ export async function updateMemberBiometrics(
   biometrics: MemberBiometrics
 ): Promise<MemberItem> {
   return updateMember(memberId, { biometrics });
+}
+
+/**
+ * Links (or clears) the eSSL/ZKTeco terminal User ID assigned to a member on the
+ * physical device panel. The ADMS protocol uses this User ID to resolve punches
+ * back to the Member record.
+ */
+export async function linkBiometric(
+  memberId: string,
+  deviceUserId: string
+): Promise<MemberItem> {
+  const res = await api.request<{ data?: MemberItem }>(
+    `/members/${memberId}/link-biometric`,
+    { method: 'POST', body: { deviceUserId }, auth: true }
+  );
+  return unwrapMember(res);
 }
 
 export interface PlanItem {

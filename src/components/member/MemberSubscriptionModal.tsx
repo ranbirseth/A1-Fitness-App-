@@ -21,11 +21,8 @@ import {
   type PlanItem,
   assignPlan,
   cancelPlan,
-  freezePlan,
   getPlans,
   renewPlan,
-  resumePlan,
-  upgradePlan,
 } from '../../api/members';
 import { generateIdempotencyKey } from '../../api/idempotency';
 import { ApiError } from '../../api/client';
@@ -39,7 +36,7 @@ function formatINR(value: number): string {
   return '₹' + value.toLocaleString('en-IN');
 }
 
-type Action = 'assign' | 'renew' | 'upgrade' | 'freeze' | 'resume' | 'cancel';
+type Action = 'assign' | 'renew' | 'cancel';
 
 const PAYMENT_METHODS = ['cash', 'card', 'upi', 'online'] as const;
 
@@ -116,8 +113,8 @@ export function MemberSubscriptionModal({ visible, onClose, member, onDone, bran
 
   const runAction = async (action: Action) => {
     if (submittingRef.current || busy) return;
-    if ((action === 'assign' || action === 'upgrade') && !selectedPlanId) {
-      Alert.alert('Select a plan first', 'Choose a plan before assigning or upgrading.');
+    if (action === 'assign' && !selectedPlanId) {
+      Alert.alert('Select a plan first', 'Choose a plan before assigning.');
       return;
     }
 
@@ -152,21 +149,6 @@ export function MemberSubscriptionModal({ visible, onClose, member, onDone, bran
           message = 'Plan renewed.';
           break;
         }
-        case 'upgrade':
-          await upgradePlan(member._id, {
-            planId: selectedPlanId,
-            payment,
-          });
-          message = 'Plan upgraded.';
-          break;
-        case 'freeze':
-          await freezePlan(member._id);
-          message = 'Membership frozen.';
-          break;
-        case 'resume':
-          await resumePlan(member._id);
-          message = 'Membership resumed.';
-          break;
         case 'cancel':
           await cancelPlan(member._id);
           message = 'Membership cancelled.';
@@ -349,26 +331,6 @@ export function MemberSubscriptionModal({ visible, onClose, member, onDone, bran
                 onPress={() => runAction('renew')}
               />
               <ActionButton
-                label="Upgrade"
-                disabled={busy !== null}
-                busy={busy === 'upgrade'}
-                onPress={() => runAction('upgrade')}
-              />
-            </View>
-            <View style={styles.actionsRow}>
-              <ActionButton
-                label="Freeze"
-                disabled={busy !== null || member.status !== 'active'}
-                busy={busy === 'freeze'}
-                onPress={() => runAction('freeze')}
-              />
-              <ActionButton
-                label="Resume"
-                disabled={busy !== null || member.status !== 'frozen'}
-                busy={busy === 'resume'}
-                onPress={() => runAction('resume')}
-              />
-              <ActionButton
                 label="Cancel"
                 danger
                 disabled={busy !== null}
@@ -376,12 +338,6 @@ export function MemberSubscriptionModal({ visible, onClose, member, onDone, bran
                 onPress={confirmCancel}
               />
             </View>
-            {(member.status !== 'active' || true) && (
-              <Text style={styles.hint}>
-                Freeze requires an active membership. Resume requires a frozen
-                membership.
-              </Text>
-            )}
           </ScrollView>
         </View>
       </KeyboardAvoidingView>

@@ -16,6 +16,7 @@ const {
   freezePlan,
   resumePlan,
   approveMember,
+  linkBiometric,
   getMyProfile,
   updateMyProfile
 } = require("../controllers/member.controller");
@@ -36,5 +37,6 @@ router.patch("/:id/cancel-plan", authorize("manage_plans"), cancelPlan);
 router.patch("/:id/freeze-plan", authorize("manage_plans"), freezePlan);
 router.patch("/:id/resume-plan", authorize("manage_plans"), resumePlan);
 router.patch("/:id/approve", authorize("approve_member"), approveMember);
+router.post("/:id/link-biometric", authorize("update_member"), linkBiometric);
 
 module.exports = router;

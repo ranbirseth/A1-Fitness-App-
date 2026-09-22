@@ -29,6 +29,7 @@ import {
   createMember,
   getPlans,
   getTrainers,
+  linkBiometric,
   updateMember,
 } from '../../api/members';
 
@@ -85,6 +86,7 @@ interface FormValues {
   trainerId: string;
   status: 'active' | 'inactive';
   membershipStartDate: string;
+  deviceUserId: string;
 }
 
 function blankForm(): FormValues {
@@ -98,6 +100,7 @@ function blankForm(): FormValues {
     trainerId: '',
     status: 'active',
     membershipStartDate: todayDDMMYYYY(),
+    deviceUserId: '',
   };
 }
 
@@ -159,6 +162,7 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         membershipStartDate: editing.membershipStartDate
           ? toDDMMYYYY(new Date(editing.membershipStartDate))
           : todayDDMMYYYY(),
+        deviceUserId: editing.biometrics?.deviceUserId ?? '',
       });
       loadTrainers(editing.branchCode ?? '');
     } else {
@@ -237,6 +241,11 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         };
         if (form.password.trim()) payload.password = form.password.trim();
         await updateMember(editing._id, payload);
+        const nextDeviceUserId = form.deviceUserId.trim();
+        const currentDeviceUserId = (editing.biometrics?.deviceUserId ?? '').trim();
+        if (nextDeviceUserId !== currentDeviceUserId) {
+          await linkBiometric(editing._id, nextDeviceUserId);
+        }
         onSaved('Member updated');
       } else {
         const payload: MemberCreatePayload = {
@@ -249,7 +258,10 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         };
         if (form.planId) payload.planId = form.planId;
         if (form.trainerId) payload.trainerId = form.trainerId;
-        await createMember(payload);
+        const created = await createMember(payload);
+        if (form.deviceUserId.trim()) {
+          await linkBiometric(created._id, form.deviceUserId.trim());
+        }
         onSaved('Member created');
       }
       onClose();
@@ -320,6 +332,26 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
               {formErrors.phone && <Text style={styles.fieldError}>{formErrors.phone}</Text>}
               <Text style={styles.hint}>
                 Used as the WhatsApp destination for membership reminders.
+              </Text>
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Biometric Device User ID</Text>
+              <TextInput
+                style={[styles.input, formErrors.deviceUserId && styles.inputError]}
+                value={form.deviceUserId}
+                onChangeText={(t) => changeField('deviceUserId', t, 'deviceUserId')}
+                placeholder="Enter the matching User ID assigned to this member on the physical eSSL terminal panel (e.g., 1)"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="number-pad"
+                autoCorrect={false}
+                editable={!submitting}
+              />
+              {formErrors.deviceUserId && (
+                <Text style={styles.fieldError}>{formErrors.deviceUserId}</Text>
+              )}
+              <Text style={styles.hint}>
+                Links this member's biometric punches to their terminal user ID.
               </Text>
             </View>
 

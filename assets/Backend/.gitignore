@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Environment (contains real credentials - never commit)
+.env
+
+# Logs
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*

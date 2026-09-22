@@ -865,6 +865,52 @@ const approveMember = asyncHandler(async (req, res) => {
   sendResponse(res, { message: "Member approved successfully", data: member });
 });
 
+// Links (or clears) the eSSL/ZKTeco terminal User ID for a member. The User ID
+// is the numeric identifier assigned to the member on the physical device panel,
+// which the ADMS protocol uses to resolve punches back to this Member record.
+const linkBiometric = asyncHandler(async (req, res) => {
+  if (req.body.deviceUserId === undefined) {
+    throw Object.assign(new Error("deviceUserId is required"), { statusCode: 400 });
+  }
+  const deviceUserId = String(req.body.deviceUserId).trim();
+
+  const member = await Member.findOne({ _id: req.params.id, gymId: req.gymId });
+  if (!member) throw Object.assign(new Error("Member not found in your gym"), { statusCode: 404 });
+  if (!enforceBranchOwnership(member.branchCode, req)) {
+    throw Object.assign(new Error("Member not found in your branch"), { statusCode: 404 });
+  }
+  assertTrainerAssignment(req, member);
+
+  let updated;
+  try {
+    updated = await Member.findByIdAndUpdate(
+      member._id,
+      { $set: { "biometrics.deviceUserId": deviceUserId } },
+      { new: true }
+    )
+      .populate("user", SENSITIVE_USER_FIELDS)
+      .populate("trainer", SENSITIVE_USER_FIELDS)
+      .populate("currentPlan");
+  } catch (error) {
+    throw error;
+  }
+
+  if (req.app.locals.io) {
+    req.app.locals.io.to(req.gymId).emit("member:updated", {
+      memberId: member._id,
+      biometrics: { deviceUserId },
+      action: deviceUserId ? "biometric_linked" : "biometric_unlinked"
+    });
+  }
+
+  sendResponse(res, {
+    message: deviceUserId
+      ? `Biometric device user ID ${deviceUserId} linked to member`
+      : "Biometric device user ID removed",
+    data: updated
+  });
+});
+
 module.exports = { 
   createMember, 
   listMembers, 
@@ -879,6 +925,7 @@ module.exports = {
   freezePlan,
   resumePlan,
   approveMember,
+  linkBiometric,
   getMyProfile, 
   updateMyProfile,
   // Exported for unit tests (pure, non-DB helpers).

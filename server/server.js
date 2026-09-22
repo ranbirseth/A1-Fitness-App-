@@ -32,6 +32,8 @@ const { backfillTemplateBranches } = require("./services/templateBranch.service"
 const { migrateUserEmailIndex } = require("./services/userIndex.service");
 const whatsappService = require("./services/whatsapp.service");
 const { logConfig } = require("./utils/whatsappDebug");
+const { startAdmsServer } = require("./adms/admsServer");
+const { initRealtime } = require("./services/realtime.service");
 
 // ============================================================
 // EXPRESS APP
@@ -124,6 +126,7 @@ const io = new Server(server, {
 });
 
 app.locals.io = io;
+initRealtime(io);
 
 // ============================================================
 // SECURITY MIDDLEWARE
@@ -484,6 +487,11 @@ const start = async () => {
     );
 
     startServer(port);
+
+    // ADMS listener on 8081 for the eSSL/ZKTeco device push protocol.
+    // Started after the main API; a bind failure logs clearly and does NOT
+    // take down or re-port the main API on 5000.
+    startAdmsServer();
   } catch (error) {
     console.error(
       "Critical server startup error:",

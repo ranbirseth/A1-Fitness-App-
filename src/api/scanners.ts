@@ -23,6 +23,7 @@ export interface ScannerItem {
   serial?: string;
   ipAddress?: string;
   port?: number;
+  deviceTimezone?: string;
   protocol: ScannerProtocol;
   type: ScannerType;
   status: ScannerStatus;
@@ -48,6 +49,7 @@ export interface ScannerCreatePayload {
   model?: string;
   ipAddress?: string;
   port?: number;
+  deviceTimezone?: string;
   protocol?: ScannerProtocol;
   type?: ScannerType;
   branchCode?: string;
@@ -62,11 +64,23 @@ export interface ScannerUpdatePayload {
   serial?: string;
   ipAddress?: string;
   port?: number;
+  deviceTimezone?: string;
   protocol?: ScannerProtocol;
   type?: ScannerType;
   status?: ScannerStatus;
   gates?: string[];
   settings?: { enforceMembership?: boolean; enableCheckOutOnSecondScan?: boolean };
+}
+
+export interface ScannerPingResult {
+  scannerId: string;
+  deviceId: string;
+  serial?: string | null;
+  branchCode: string;
+  status: 'online' | 'offline';
+  lastSeen?: string | null;
+  ageMs?: number | null;
+  thresholdMs: number;
 }
 
 export interface ScannerSyncMember {
@@ -151,6 +165,17 @@ export async function rotateScannerKey(scannerId: string): Promise<{ apiKey: str
 
 export async function getSyncPayload(scannerId: string): Promise<ScannerSyncPayload> {
   const res = await api.request<{ data?: ScannerSyncPayload }>(`/scanners/${scannerId}/sync-payload`, {
+    auth: true,
+  });
+  if (!res.data) {
+    throw new Error('The server returned an unexpected response.');
+  }
+  return res.data;
+}
+
+export async function pingScanner(scannerId: string): Promise<ScannerPingResult> {
+  const res = await api.request<{ data?: ScannerPingResult }>(`/scanners/${scannerId}/ping`, {
+    method: 'POST',
     auth: true,
   });
   if (!res.data) {

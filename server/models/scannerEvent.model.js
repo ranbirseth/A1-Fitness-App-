@@ -21,6 +21,7 @@ const scannerEventSchema = new mongoose.Schema(
         "payment_pending",
         "duplicate",
         "checkout",
+        "branch_mismatch",
         "disabled_device"
       ],
       default: "verified",

@@ -18,6 +18,7 @@ import {
   disableScanner,
   getScanner,
   getSyncPayload,
+  pingScanner,
   rotateScannerKey,
   updateScanner,
   type ScannerItem,
@@ -135,6 +136,21 @@ export function ScannerDetailsScreen() {
     }
   };
 
+  const onPing = async () => {
+    try {
+      const res = await pingScanner(scannerId);
+      const lastSeen = res.lastSeen ? new Date(res.lastSeen).toLocaleString('en-IN') : 'never';
+      Alert.alert(
+        res.status === 'online' ? 'Device online' : 'Device offline',
+        `${res.deviceId} is reported ${res.status.toUpperCase()}\nLast seen: ${lastSeen}\nAge: ${
+          res.ageMs != null ? ((res.ageMs / 1000).toFixed(1) + 's') : '—'
+        }\nThreshold: ${(res.thresholdMs / 1000).toFixed(0)}s`
+      );
+    } catch (e: unknown) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Failed to test connection');
+    }
+  };
+
   const isSuperadmin = user?.role === 'superadmin';
   const statusColor = scanner ? STATUS_COLORS[scanner.status] : colors.textMuted;
 
@@ -227,6 +243,10 @@ export function ScannerDetailsScreen() {
                     </TouchableOpacity>
                   ))}
                 </View>
+
+                <TouchableOpacity style={styles.actionButton} onPress={onPing} activeOpacity={0.85}>
+                  <Text style={styles.actionButtonText}>Test connection</Text>
+                </TouchableOpacity>
 
                 <TouchableOpacity style={styles.actionButton} onPress={onSync} activeOpacity={0.85}>
                   <Text style={styles.actionButtonText}>Generate enrollment payload</Text>

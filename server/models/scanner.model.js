@@ -20,6 +20,7 @@ const scannerSchema = new mongoose.Schema(
     serial: { type: String, trim: true },
     ipAddress: { type: String, trim: true },
     port: { type: Number, default: 8200 },
+    deviceTimezone: { type: String, trim: true, default: "Asia/Kolkata" },
     protocol: { type: String, enum: ["tcp", "usb", "p2p"], default: "tcp" },
     type: {
       type: String,
@@ -48,6 +49,7 @@ const scannerSchema = new mongoose.Schema(
 );
 
 scannerSchema.index({ gymId: 1, branchCode: 1 });
+scannerSchema.index({ serial: 1 }, { unique: true, sparse: true });
 
 scannerSchema.methods.logError = function (message, level = "error") {
   this.errorLogs.push({ message, level, at: new Date() });

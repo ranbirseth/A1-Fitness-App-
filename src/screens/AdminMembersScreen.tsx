@@ -21,6 +21,7 @@ import {
   approveMember,
   deleteMember,
   getMembers,
+  showSubscriptionAction,
   updateMember,
 } from '../api/members';
 import { type BranchItem, getBranches } from '../api/branches';
@@ -433,6 +434,7 @@ function MemberCard({
   const name = member.user?.name || 'Unknown';
   const isPending = member.status === 'pending';
   const isInactive = member.status === 'inactive';
+  const showSubscription = !isPending && showSubscriptionAction(member);
 
   return (
     <View style={styles.card}>
@@ -487,7 +489,7 @@ function MemberCard({
           >
             <Text style={styles.actionTextPrimary}>Approve</Text>
           </TouchableOpacity>
-        ) : (
+        ) : showSubscription ? (
           <TouchableOpacity
             style={[styles.actionButton, styles.actionButtonPrimary]}
             onPress={onSubscription}
@@ -495,7 +497,7 @@ function MemberCard({
           >
             <Text style={styles.actionTextPrimary}>Subscription</Text>
           </TouchableOpacity>
-        )}
+        ) : null}
       </View>
       <View style={styles.actionsRow}>
         <TouchableOpacity style={styles.actionButton} onPress={onEdit} activeOpacity={0.7}>

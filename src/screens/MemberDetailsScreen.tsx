@@ -21,6 +21,7 @@ import {
   approveMember,
   deleteMember,
   getMember,
+  showSubscriptionAction,
   updateMember,
 } from '../api/members';
 import { type BranchItem, getBranches } from '../api/branches';
@@ -249,6 +250,7 @@ export function MemberDetailsScreen() {
 
   const isPending = member.status === 'pending';
   const isInactive = member.status === 'inactive';
+  const showSubscription = isPending || showSubscriptionAction(member);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
@@ -330,6 +332,7 @@ export function MemberDetailsScreen() {
         </Section>
 
         <View style={styles.buttonGroup}>
+          {showSubscription && (
           <TouchableOpacity
             style={[styles.primaryButton, isPending && styles.primaryButtonDimmed]}
             onPress={() => setSubscriptionVisible(true)}
@@ -340,6 +343,7 @@ export function MemberDetailsScreen() {
               {isPending ? 'Approve to manage subscription' : 'Manage Subscription'}
             </Text>
           </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.secondaryButton} onPress={() => setFormVisible(true)} activeOpacity={0.8}>
             <Text style={styles.secondaryButtonText}>Edit Details</Text>
           </TouchableOpacity>

@@ -36,6 +36,9 @@ yarn-error.*
 # server secrets (Mongo URI, JWT secrets, WhatsApp access token)
 /server/.env
 
+# new clean auth backend secrets
+/Backend/.env
+
 # typescript
 *.tsbuildinfo
 
