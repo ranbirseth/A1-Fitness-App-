@@ -120,16 +120,32 @@ describe("DeviceCommand queue lifecycle", () => {
     assert.equal(failed.status, "failed");
   });
 
+  it("-1004 parameter relay error is absorbed as failed, never thrown/frozen", async () => {
+    store.commands = [];
+    const cmd = await enqueueCommand({ serialNumber: "SN-A", commandString: "X" });
+    const relay = await acknowledgeCommand({
+      serialNumber: "SN-A",
+      commandId: cmd.commandId,
+      returnCode: "-1004",
+      rawBody: "ID=1&Return=-1004&CMD=DATA"
+    });
+    assert.ok(relay);
+    assert.equal(relay.status, "failed");
+    assert.match(relay.responseRaw, /Return=-1004/);
+    assert.equal(store.commands.filter((c) => c.status === "failed").length, 1);
+  });
+
   it("returns null when acknowledging an unknown commandId", async () => {
     store.commands = [];
     assert.equal(await acknowledgeCommand({ serialNumber: "SN-A", commandId: 999, returnCode: "0" }), null);
   });
 
-  it("formats the getrequest response or the keep-alive newline", () => {
+  it("formats the getrequest response with the poll-acceleration header", () => {
+    const options = "SET OPTIONS PushComInterval=5";
     const payload = buildGetRequestResponse({ commandId: 3, commandString: GATE_RESTRICTION_COMMAND });
-    assert.equal(payload, `C:3:${GATE_RESTRICTION_COMMAND}`);
-    assert.equal(buildGetRequestResponse(null), "\n");
-    assert.equal(buildGetRequestResponse({ commandString: "no-id" }), "\n");
+    assert.equal(payload, `C:3:${GATE_RESTRICTION_COMMAND}\n${options}\n`);
+    assert.equal(buildGetRequestResponse(null), `${options}\n`);
+    assert.equal(buildGetRequestResponse({ commandString: "no-id" }), `${options}\n`);
   });
 
   it("enqueues a restriction command only for eligibility reasons", async () => {

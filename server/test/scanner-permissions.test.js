@@ -159,11 +159,35 @@ describe("branch admins can manage their own branch", () => {
     assert.equal(out.err.statusCode, 404);
   });
 
-  it("an admin can create a scanner (201) and it is forced to their branch", async () => {
+  it("an admin can create a scanner (201) in their own branch using an explicit branchCode", async () => {
     store.scanner = null;
     const req = adminReq({
       user: { role: "admin", _id: "u-ad", branchCode: "B1" },
-      body: { name: "Front Door", deviceId: "K30-1", branchCode: "BOGUS" },
+      body: { name: "Front Door", deviceId: "K30-1", branchCode: "B1" },
+    });
+    const out = await runHandler(createScanner, req);
+    assert.equal(out.ok, true);
+    assert.equal(out.res.statusCode, 201);
+    assert.equal(createdDoc.branchCode, "B1");
+  });
+
+  it("an admin cannot create a scanner for another branch", async () => {
+    store.scanner = null;
+    const req = adminReq({
+      user: { role: "admin", _id: "u-ad", branchCode: "B1" },
+      body: { name: "Back Door", deviceId: "K30-2", branchCode: "BOGUS" },
+    });
+    const out = await runHandler(createScanner, req);
+    assert.equal(out.ok, false);
+    assert.equal(out.err.statusCode, FORBIDDEN);
+    assert.match(out.err.message, /Cannot assign a scanner to another branch/);
+  });
+
+  it("an admin without a branchCode request falls back to their own branch", async () => {
+    store.scanner = null;
+    const req = adminReq({
+      user: { role: "admin", _id: "u-ad", branchCode: "B1" },
+      body: { name: "Side Door", deviceId: "K30-3" },
     });
     const out = await runHandler(createScanner, req);
     assert.equal(out.ok, true);

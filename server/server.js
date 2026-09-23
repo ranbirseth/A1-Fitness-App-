@@ -32,7 +32,6 @@ const { backfillTemplateBranches } = require("./services/templateBranch.service"
 const { migrateUserEmailIndex } = require("./services/userIndex.service");
 const whatsappService = require("./services/whatsapp.service");
 const { logConfig } = require("./utils/whatsappDebug");
-const { startAdmsServer } = require("./adms/admsServer");
 const { initRealtime } = require("./services/realtime.service");
 
 // ============================================================
@@ -138,6 +137,17 @@ app.use(
   })
 );
 
+// ============================================================
+// ADMS DEVICE PUSH MIDDLEWARE (eSSL/ZKTeco access terminals)
+// ============================================================
+// Registered BEFORE the global JSON parser so the raw, unparsed tab/newline
+// separated log streams a terminal POSTs to /iclock/* stay as plain strings in
+// req.body. Express json() only consumes application/json, but this ordering is
+// mandatory: if an upstream proxy ever labels the stream as JSON, a parser
+// registered first (json) would corrupt the payload with a serialization error.
+app.use("/iclock", express.text({ type: "*/*", limit: "5mb" }));
+app.use("/iclock", require("./routes/adms.routes"));
+
 app.use(
   express.json({
     limit: "1mb",
@@ -152,12 +162,15 @@ app.use(morgan("dev"));
 // RATE LIMIT
 // ============================================================
 
+// Hardware admission terminals and scanner-managed endpoints must never be
+// throttled as DDoS traffic. These path prefixes are the explicit whitelist.
+const RATE_LIMIT_BYPASS_PREFIXES = ["/api/scanners", "/iclock"];
+
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
-    // Device/ingestion endpoints get their own dedicated (higher) limits.
-    skip: (req) => req.path.startsWith("/api/scanners"),
+    skip: (req) => RATE_LIMIT_BYPASS_PREFIXES.some((prefix) => req.path.startsWith(prefix)),
   })
 );
 
@@ -487,11 +500,6 @@ const start = async () => {
     );
 
     startServer(port);
-
-    // ADMS listener on 8081 for the eSSL/ZKTeco device push protocol.
-    // Started after the main API; a bind failure logs clearly and does NOT
-    // take down or re-port the main API on 5000.
-    startAdmsServer();
   } catch (error) {
     console.error(
       "Critical server startup error:",

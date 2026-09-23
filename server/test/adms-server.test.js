@@ -1,15 +1,13 @@
 const { describe, it, before, after } = require("node:test");
 const assert = require("node:assert/strict");
-const http = require("http");
+const express = require("express");
 
 const Scanner = require("../models/scanner.model");
 const Member = require("../models/member.model");
 const Attendance = require("../models/attendance.model");
 const ScannerEvent = require("../models/scannerEvent.model");
 const DeviceCommand = require("../models/deviceCommand.model");
-const { createAdmsServer, startAdmsServer } = require("../adms/admsServer");
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const admsRoutes = require("../routes/adms.routes");
 
 const makeScanner = (overrides = {}) => ({
   _id: "s1",
@@ -31,8 +29,11 @@ let baseUrl;
 let store;
 
 async function withServer(fn) {
-  server = createAdmsServer();
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const app = express();
+  app.use("/iclock", express.text({ type: "*/*", limit: "5mb" }));
+  app.use("/iclock", admsRoutes);
+  server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
   try {
     await fn();
@@ -108,7 +109,7 @@ describe("ADMS endpoint: GET /iclock/getrequest", () => {
       const res = await fetch(`${baseUrl}/iclock/getrequest?SN=SN-001&options=all`);
       assert.equal(res.status, 200);
       assert.match(res.headers.get("content-type"), /text\/plain/);
-      assert.equal(await res.text(), "\n");
+      assert.equal(await res.text(), "SET OPTIONS PushComInterval=5\n");
     });
   });
 
@@ -255,25 +256,5 @@ describe("ADMS endpoint: POST /iclock/cdata", () => {
       const res = await fetch(`${baseUrl}/iclock/devicecmd`, { method: "GET" });
       assert.equal(res.status, 404);
     });
-  });
-});
-
-describe("ADMS server startup resilience", () => {
-  it("absorbs a bind conflict (EADDRINUSE) without crashing the process", async () => {
-    const adms = startAdmsServer();
-    try {
-      await delay(50);
-      adms.emit(
-        "error",
-        Object.assign(new Error("listen EADDRINUSE: address already in use :::8081"), { code: "EADDRINUSE" })
-      );
-      await delay(20);
-      assert.ok(adms instanceof http.Server);
-      assert.ok(true, "process survived an EADDRINUSE event with no uncaught error");
-    } finally {
-      if (adms && adms.listening) {
-        await new Promise((resolve) => adms.close(resolve));
-      }
-    }
   });
 });
