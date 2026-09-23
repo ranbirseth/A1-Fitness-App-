@@ -42,7 +42,13 @@ const createScanner = asyncHandler(async (req, res) => {
   const existing = await Scanner.findOne({ deviceId });
   if (existing) throw new AppError("A scanner with this deviceId already exists", 409);
 
-  const branchCode = (req.user.branchCode || "MAIN").trim().toUpperCase();
+  const requestedBranch = typeof req.body.branchCode === "string" && req.body.branchCode.trim()
+    ? req.body.branchCode.trim().toUpperCase()
+    : "";
+  if (requestedBranch && !enforceBranchOwnership(requestedBranch, req)) {
+    throw new AppError("Forbidden: Cannot assign a scanner to another branch", 403);
+  }
+  const branchCode = requestedBranch || (req.user.branchCode || "MAIN").trim().toUpperCase();
 
   const apiKey = generateKey();
   const body = { ...req.body };

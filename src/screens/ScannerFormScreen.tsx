@@ -17,6 +17,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors } from '../theme/colors';
 import { createScanner, getScanner, updateScanner, type ScannerProtocol, type ScannerType } from '../api/scanners';
+import { getBranches, type BranchItem } from '../api/branches';
 import { useAuth } from '../auth/AuthContext';
 import { AppStackParamList } from '../navigation/types';
 
@@ -45,6 +46,10 @@ export function ScannerFormScreen() {
   const [type, setType] = useState<ScannerType>('fingerprint_card');
   const [branchCode, setBranchCode] = useState(isSuperadmin ? '' : (user?.branchCode || 'MAIN'));
   const [checkOutOnSecondScan, setCheckOutOnSecondScan] = useState(true);
+  const [branches, setBranches] = useState<BranchItem[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+  const [branchesError, setBranchesError] = useState<string | null>(null);
+  const [branchSheet, setBranchSheet] = useState(false);
 
   useEffect(() => {
     if (!scannerId) {
@@ -72,11 +77,41 @@ export function ScannerFormScreen() {
       .finally(() => setLoading(false));
   }, [scannerId, navigation]);
 
+  useEffect(() => {
+    if (isSuperadmin) return;
+    let cancelled = false;
+    setBranchesLoading(true);
+    setBranchesError(null);
+    getBranches(100)
+      .then((items) => {
+        if (cancelled) return;
+        setBranches(items);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setBranchesError(e instanceof Error ? e.message : 'Failed to load branches.');
+        setBranches([]);
+      })
+      .finally(() => {
+        if (!cancelled) setBranchesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isSuperadmin]);
+
+  const selectedBranchName = branches.find((b) => b.branchCode.trim().toUpperCase() === branchCode.trim().toUpperCase())?.name;
+
   const onSave = async () => {
     const trimmedName = name.trim();
     const trimmedDeviceId = deviceId.trim();
+    const trimmedBranch = branchCode.trim();
     if (!trimmedName || !trimmedDeviceId) {
       Alert.alert('Missing fields', 'Name and Device ID are required.');
+      return;
+    }
+    if (!scannerId && !trimmedBranch) {
+      Alert.alert('Missing fields', 'Assign the scanner to a branch before registering it.');
       return;
     }
 
@@ -102,7 +137,7 @@ export function ScannerFormScreen() {
         const created = await createScanner({
           ...common,
           deviceId: trimmedDeviceId,
-          branchCode: branchCode.trim().toUpperCase() || 'MAIN',
+          branchCode: trimmedBranch.toUpperCase(),
         });
         if (created.apiKey) {
           setApiKeyModal(created.apiKey);
@@ -226,18 +261,29 @@ export function ScannerFormScreen() {
             </View>
           </View>
 
-          {isSuperadmin ? (
-            <Field label="Branch Code">
-              <TextInput
-                style={styles.input}
-                value={branchCode}
-                onChangeText={setBranchCode}
-                placeholder="MAIN"
-                placeholderTextColor={colors.textFaint}
-                autoCapitalize="characters"
-              />
-            </Field>
-          ) : null}
+          <Field label={scannerId ? 'Branch' : 'Assign to Branch'}>
+            <TouchableOpacity
+              style={styles.selectInput}
+              onPress={() => {
+                if (!scannerId && !saving) setBranchSheet(true);
+              }}
+              disabled={!!scannerId || saving}
+              activeOpacity={scannerId ? 1 : 0.8}
+            >
+              <Text style={[styles.selectText, !branchCode && styles.selectPlaceholder]} numberOfLines={1}>
+                {selectedBranchName || 'Select a branch…'}
+              </Text>
+              {!scannerId ? <Text style={styles.selectChevron}>▾</Text> : null}
+            </TouchableOpacity>
+            {branchesLoading ? (
+              <Text style={styles.fieldHint}>Loading branches…</Text>
+            ) : branchesError ? (
+              <Text style={styles.fieldError}>Could not load branches. {branchesError}</Text>
+            ) : null}
+            {scannerId ? (
+              <Text style={styles.fieldHint}>Branch assignment is fixed at registration and cannot be changed.</Text>
+            ) : null}
+          </Field>
 
           <Field label="Protocol">
             <View style={styles.chipRow}>
@@ -282,6 +328,19 @@ export function ScannerFormScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       )}
+
+      <BranchSheet
+        visible={branchSheet}
+        branches={branches}
+        loading={branchesLoading}
+        error={branchesError}
+        selectedCode={branchCode}
+        onSelect={(code) => {
+          setBranchCode(code);
+          setBranchSheet(false);
+        }}
+        onClose={() => setBranchSheet(false)}
+      />
 
       <Modal visible={!!apiKeyModal} transparent animationType="fade" onRequestClose={() => { setApiKeyModal(null); navigation.goBack(); }}>
         <View style={styles.modalOverlay}>
@@ -355,6 +414,71 @@ function ToggleRow({
         <View style={[styles.toggleKnob, value && styles.toggleKnobOn]} />
       </TouchableOpacity>
     </View>
+  );
+}
+
+function BranchSheet({
+  visible,
+  branches,
+  loading,
+  error,
+  selectedCode,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  branches: BranchItem[];
+  loading: boolean;
+  error: string | null;
+  selectedCode: string;
+  onSelect: (code: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.sheetOverlay}>
+        <TouchableOpacity style={styles.sheetBackdrop} onPress={onClose} activeOpacity={1} />
+        <View style={styles.sheetBody}>
+          <Text style={styles.sheetTitle}>Assign to Branch</Text>
+          {loading ? (
+            <View style={styles.sheetState}>
+              <ActivityIndicator size="small" color={colors.accent} />
+              <Text style={styles.sheetStateText}>Loading branches…</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.sheetState}>
+              <Text style={styles.sheetStateText}>Could not load branches. {error}</Text>
+            </View>
+          ) : branches.length === 0 ? (
+            <View style={styles.sheetState}>
+              <Text style={styles.sheetStateText}>No branches available. Contact a super admin to create one.</Text>
+            </View>
+          ) : (
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {branches.map((branch) => {
+                const selected = branch.branchCode.trim().toUpperCase() === selectedCode.trim().toUpperCase();
+                return (
+                  <TouchableOpacity
+                    key={branch._id}
+                    style={[styles.sheetOption, selected && styles.sheetOptionSelected]}
+                    onPress={() => onSelect(branch.branchCode)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.sheetTextWrap}>
+                      <Text style={[styles.sheetOptionText, selected && styles.sheetOptionTextSelected]}>
+                        {branch.name}
+                      </Text>
+                      <Text style={styles.sheetOptionSub}>{branch.branchCode}</Text>
+                    </View>
+                    {selected ? <Text style={styles.sheetCheck}>✓</Text> : null}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -458,6 +582,53 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { color: colors.text, fontSize: 15, fontWeight: '800' },
   hint: { color: colors.textFaint, fontSize: 12, textAlign: 'center', marginTop: 12 },
+  selectInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    height: 46,
+    paddingHorizontal: 14,
+  },
+  selectText: { color: colors.text, fontSize: 14, flex: 1, marginRight: 8 },
+  selectPlaceholder: { color: colors.textFaint },
+  selectChevron: { color: colors.textMuted, fontSize: 14 },
+  fieldHint: { color: colors.textFaint, fontSize: 12, marginTop: 6, lineHeight: 17 },
+  fieldError: { color: colors.danger, fontSize: 12, marginTop: 6, lineHeight: 17 },
+  sheetOverlay: { flex: 1, justifyContent: 'flex-end' },
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  sheetBody: {
+    backgroundColor: '#13161d',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 18,
+    paddingBottom: 28,
+    maxHeight: '62%',
+  },
+  sheetTitle: { color: colors.text, fontSize: 18, fontWeight: '800', marginBottom: 14 },
+  sheetState: { alignItems: 'center', paddingVertical: 24 },
+  sheetStateText: { color: colors.textMuted, fontSize: 13, textAlign: 'center', marginTop: 8, lineHeight: 18 },
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    marginBottom: 4,
+  },
+  sheetOptionSelected: { borderColor: 'rgba(139,92,246,0.5)', backgroundColor: 'rgba(139,92,246,0.15)' },
+  sheetTextWrap: { flex: 1, marginRight: 10 },
+  sheetOptionText: { color: colors.textMuted, fontSize: 15, fontWeight: '600' },
+  sheetOptionSub: { color: colors.textFaint, fontSize: 12, marginTop: 2 },
+  sheetOptionTextSelected: { color: colors.accent, fontWeight: '700' },
+  sheetCheck: { color: colors.accent, fontSize: 15, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', paddingHorizontal: 24 },
   modalBody: {
     backgroundColor: '#151a20',

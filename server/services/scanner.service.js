@@ -154,8 +154,9 @@ async function processScannerEvent({ scanner, event }) {
     return { status: "denied", reason: "unknown_user", id: createScannerEventId(created) };
   }
 
-  const memberBranch = (member.branchCode || "MAIN").trim().toUpperCase();
-  const scannerBranch = (scanner.branchCode || "MAIN").trim().toUpperCase();
+  const memberBranch = String(member.branchCode || "").trim().toLowerCase();
+  const scannerBranch = String(scanner.branchCode || "").trim().toLowerCase();
+
   if (memberBranch !== scannerBranch) {
     const created = await logScannerEvent({ scanner, member, event, eventType, decision: "deny", reason: "branch_mismatch", deviceEventId, timestamp: eventTime });
     if (!consolidate(created)) return { status: "duplicate", id: null };

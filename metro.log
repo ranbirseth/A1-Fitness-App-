@@ -8,3 +8,60 @@ Waiting on http://localhost:8082
 An update for expo is available: 57.0.21 → ~57.0.24
 1 other package may need updating. Run npx expo install --check for details.
 Logs for your project will appear below.
+Android Bundled 1001ms index.ts (1005 modules)
+ LOG  [LOGIN-DIAG] {"gymId":"MAIN","email":"sa@gmail.com","role":"superadmin"}
+ LOG  [REMINDER] --> deriving reminder candidates from 0 payments
+ LOG  [REMINDER] --> eligible member count: 0
+ LOG  [PAYMENT] --> selected period: thisMonth
+ LOG  [PAYMENT] --> calculated date range: {"dateFrom": "2026-08-31", "dateTo": "2026-09-22"}
+ LOG  [PAYMENT] --> requesting payments {"branchCode": "ALL", "searchTerm": ""}
+ LOG  [PAYMENT] --> selected period: thisMonth
+ LOG  [PAYMENT] --> calculated date range: {"dateFrom": "2026-08-31", "dateTo": "2026-09-22"}
+ LOG  [PAYMENT] --> requesting payments {"branchCode": "ALL", "searchTerm": ""}
+ LOG  [REMINDER] --> deriving reminder candidates from 0 payments
+ LOG  [REMINDER] --> eligible member count: 0
+ LOG  [REMINDER] --> deriving reminder candidates from 0 payments
+ LOG  [REMINDER] --> eligible member count: 0
+ LOG  [PAYMENT] --> API response received: items= 2 total= 2
+ LOG  [PAYMENT] --> first payment sample: {"_id":"6ab2b20615a53715cea5fd75","gymId":"MAIN","member":{"biometrics":{"fingerprints":[],"deviceUserId":"1"},"_id":"6ab28e9d1ac863aef951ab79","gymId":"MAIN","user":{"_id":"6ab28e9d1ac863aef951ab76","name":"A","phone":"7679554766"},"trainer":null,"currentPlan":"6ab1632732ad5fec79fe6b19","membership
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [PAYMENT] --> API response received: items= 2 total= 2
+ LOG  [PAYMENT] --> first payment sample: {"_id":"6ab2b20615a53715cea5fd75","gymId":"MAIN","member":{"biometrics":{"fingerprints":[],"deviceUserId":"1"},"_id":"6ab28e9d1ac863aef951ab79","gymId":"MAIN","user":{"_id":"6ab28e9d1ac863aef951ab76","name":"A","phone":"7679554766"},"trainer":null,"currentPlan":"6ab1632732ad5fec79fe6b19","membership
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ LOG  [REMINDER] --> deriving reminder candidates from 2 payments
+ LOG  [REMINDER] --> eligible member count: 2
+ WARN  Cannot record touch end without a touch start.
+Touch End: {"identifier":2,"pageX":381.3333435058594,"pageY":324.6666564941406,"timestamp":375115314}
+Touch Bank: [{"touchActive":false,"startPageX":538.6666870117188,"startPageY":352,"startTimeStamp":375115309,"currentPageX":538.6666870117188,"currentPageY":352,"currentTimeStamp":375115314,"previousPageX":538.6666870117188,"previousPageY":352,"previousTimeStamp":375115314},{"touchActive":false,"startPageX":294,"startPageY":457.3333435058594,"startTimeStamp":375115309,"currentPageX":294,"currentPageY":457.3333435058594,"currentTimeStamp":375115314,"previousPageX":294,"previousPageY":457.3333435058594,"previousTimeStamp":375115314}]
+ WARN  Cannot record touch end without a touch start.
+Touch End: {"identifier":2,"pageX":381.3333435058594,"pageY":324.6666564941406,"timestamp":375115314}
+Touch Bank: [{"touchActive":false,"startPageX":538.6666870117188,"startPageY":352,"startTimeStamp":375115309,"currentPageX":538.6666870117188,"currentPageY":352,"currentTimeStamp":375115314,"previousPageX":538.6666870117188,"previousPageY":352,"previousTimeStamp":375115314},{"touchActive":false,"startPageX":294,"startPageY":457.3333435058594,"startTimeStamp":375115309,"currentPageX":294,"currentPageY":457.3333435058594,"currentTimeStamp":375115314,"previousPageX":294,"previousPageY":457.3333435058594,"previousTimeStamp":375115314}]
+ WARN  Cannot record touch end without a touch start.
+Touch End: {"identifier":2,"pageX":381.3333435058594,"pageY":324.6666564941406,"timestamp":375115314}
+Touch Bank: [{"touchActive":false,"startPageX":538.6666870117188,"startPageY":352,"startTimeStamp":375115309,"currentPageX":538.6666870117188,"currentPageY":352,"currentTimeStamp":375115314,"previousPageX":538.6666870117188,"previousPageY":352,"previousTimeStamp":375115314},{"touchActive":false,"startPageX":294,"startPageY":457.3333435058594,"startTimeStamp":375115309,"currentPageX":294,"currentPageY":457.3333435058594,"currentTimeStamp":375115314,"previousPageX":294,"previousPageY":457.3333435058594,"previousTimeStamp":375115314}]
+Android Bundled 46ms index.ts (1 module)
+Android Bundled 32ms index.ts (1 module)
