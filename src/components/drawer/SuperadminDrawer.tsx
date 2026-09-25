@@ -30,13 +30,10 @@ const MAIN_ITEMS: NavItemDef[] = [
   { key: 'Branches', label: 'Branches', icon: '♢', route: 'SuperadminBranches', enabled: true },
   { key: 'Admins', label: 'Admins', icon: '👤', route: 'SuperadminAdmins', enabled: true },
   { key: 'Members', label: 'Members', icon: '▤', route: 'SuperadminMembers', enabled: true },
+  { key: 'Trainers', label: 'Trainers', icon: '▣', route: 'SuperadminTrainers', enabled: true },
   { key: 'Plans', label: 'Plans', icon: '▧', route: 'SuperadminPlans', enabled: true },
   { key: 'Attendance', label: 'Attendance', icon: '◆', route: 'SuperadminAttendance', enabled: true },
   { key: 'Scanners', label: 'Scanners', icon: '▰', route: 'ScannerList', enabled: true },
-];
-
-const FUTURE_ITEMS: NavItemDef[] = [
-  { key: 'Trainers', label: 'Trainers', icon: '▣', enabled: false },
 ];
 
 const PAYMENT_ITEMS: NavItemDef[] = [
@@ -121,18 +118,6 @@ export function SuperadminDrawer({ visible, onClose }: Props) {
                 item={item}
                 active={activeKey === item.key}
                 onPress={() => navigateTo(item.route)}
-              />
-            ))}
-          </View>
-
-          {/* Future items */}
-          <View style={styles.navGroup}>
-            {FUTURE_ITEMS.map((item) => (
-              <NavRow
-                key={item.key}
-                item={item}
-                active={false}
-                onPress={() => undefined}
               />
             ))}
           </View>

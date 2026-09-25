@@ -2,6 +2,7 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -20,15 +21,14 @@ import {
 import { colors } from '../../theme/colors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { BranchItem } from '../../api/branches';
+import { type TrainerItem, getTrainers } from '../../api/trainers';
 import {
   type MemberCreatePayload,
   type MemberItem,
   type MemberUpdatePayload,
   type PlanItem,
-  type TrainerItem,
   createMember,
   getPlans,
-  getTrainers,
   linkBiometric,
   updateMember,
 } from '../../api/members';
@@ -89,19 +89,48 @@ interface FormValues {
   deviceUserId: string;
 }
 
-function blankForm(): FormValues {
+function blankForm(branchCode = ''): FormValues {
   return {
     name: '',
     email: '',
     phone: '',
     password: '',
-    branchCode: '',
+    branchCode,
     planId: '',
     trainerId: '',
     status: 'active',
     membershipStartDate: todayDDMMYYYY(),
     deviceUserId: '',
   };
+}
+
+// The API returns the member's trainer either fully populated
+// ({ _id, name, ... }) or as a bare ObjectId string, depending on the endpoint.
+// Extract the id defensively so an existing assignment is never silently lost
+// (and therefore never silently cleared on save).
+function trainerIdOf(trainer: unknown): string {
+  if (!trainer) return '';
+  if (typeof trainer === 'string') return trainer.trim();
+  if (typeof trainer === 'object') {
+    const id = (trainer as { _id?: unknown; id?: unknown })._id
+      ?? (trainer as { id?: unknown }).id;
+    if (typeof id === 'string') return id.trim();
+    if (id && typeof (id as { toString?: () => string }).toString === 'function') {
+      return String(id).trim();
+    }
+  }
+  return '';
+}
+
+// Label for a trainer that is assigned but missing from the loaded options
+// (deleted, inactive-branch, or simply not in the current page of results), so
+// the selector can still show what the member is assigned to.
+function trainerLabel(trainer: unknown, fallbackId: string): string {
+  if (trainer && typeof trainer === 'object') {
+    const name = (trainer as { name?: unknown }).name;
+    if (typeof name === 'string' && name.trim()) return name.trim();
+  }
+  return fallbackId ? `Assigned trainer (${fallbackId})` : 'Assigned trainer';
 }
 
 interface Props {
@@ -121,6 +150,9 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
   const [form, setForm] = useState<FormValues>(blankForm());
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  // Trainer id the member already had when the form opened. Used so an untouched
+  // assignment is never re-sent (and can never be wiped by accident).
+  const initialTrainerIdRef = useRef<string>('');
 
   const [plans, setPlans] = useState<PlanItem[]>([]);
   const [trainers, setTrainers] = useState<TrainerItem[]>([]);
@@ -150,6 +182,8 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
     setSubmitting(false);
 
     if (editing) {
+      const existingTrainerId = trainerIdOf(editing.trainer);
+      initialTrainerIdRef.current = existingTrainerId;
       setForm({
         name: editing.user?.name ?? '',
         email: editing.user?.email ?? '',
@@ -157,7 +191,7 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
         password: '',
         branchCode: editing.branchCode ?? '',
         planId: editing.currentPlan?._id ?? '',
-        trainerId: editing.trainer?._id ?? '',
+        trainerId: existingTrainerId,
         status: editing.status === 'inactive' ? 'inactive' : 'active',
         membershipStartDate: editing.membershipStartDate
           ? toDDMMYYYY(new Date(editing.membershipStartDate))
@@ -166,8 +200,13 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
       });
       loadTrainers(editing.branchCode ?? '');
     } else {
-      setForm(blankForm());
-      setTrainers([]);
+      initialTrainerIdRef.current = '';
+      // A branch admin only ever sees their own branch, so preselect it: their
+      // trainers load immediately without an extra tap. `branches` still holds
+      // only that branch, so the branch cannot be switched to another one.
+      const initialBranch = branchCode?.trim().toUpperCase() ?? '';
+      setForm(blankForm(initialBranch));
+      loadTrainers(initialBranch);
     }
 
     setLoadingOptions(true);
@@ -193,8 +232,18 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
     (code: string) => {
       changeField('branchCode', code, 'branchCode');
       loadTrainers(code);
+      // A trainer from another branch must never stay selected. Drop the
+      // selection only when the currently chosen trainer is not part of the
+      // newly selected branch's options.
+      setForm((f) => {
+        if (!f.trainerId) return f;
+        const stillValid = trainers.some(
+          (t) => t._id === f.trainerId && (t.branchCode ?? '').toUpperCase() === code.toUpperCase()
+        );
+        return stillValid ? f : { ...f, trainerId: '' };
+      });
     },
-    [changeField, loadTrainers]
+    [changeField, loadTrainers, trainers]
   );
 
   const validate = useCallback((): Record<string, string> => {
@@ -236,9 +285,15 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
           // cleared email keeps the existing value; empty emails are not sent.
           ...(form.email.trim() ? { email: form.email.trim().toLowerCase() } : {}),
           status: form.status,
-          trainerId: form.trainerId || null,
           branchCode: form.branchCode.trim().toUpperCase(),
         };
+        // Only send trainerId when it actually changed. An untouched assignment
+        // is left out entirely, so a trainer missing from the loaded options can
+        // never be wiped by a save. `null` is sent only when the user explicitly
+        // picked "No Trainer".
+        if (form.trainerId !== initialTrainerIdRef.current) {
+          payload.trainerId = form.trainerId || null;
+        }
         if (form.password.trim()) payload.password = form.password.trim();
         await updateMember(editing._id, payload);
         const nextDeviceUserId = form.deviceUserId.trim();
@@ -483,6 +538,17 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
                     No Trainer
                   </Text>
                 </TouchableOpacity>
+                {/* The member is assigned to a trainer that is not in the loaded
+                    options (deleted trainer, or options that did not load). Show
+                    it so the assignment is visible and preserved on save. */}
+                {form.trainerId &&
+                  !trainers.some((t) => t._id === form.trainerId) && (
+                    <View style={[styles.chip, styles.chipSelected]}>
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>
+                        {trainerLabel(editing?.trainer, form.trainerId)}
+                      </Text>
+                    </View>
+                  )}
                 {trainers.map((t) => {
                   const selected = form.trainerId === t._id;
                   return (
@@ -500,7 +566,7 @@ export function MemberFormModal({ visible, onClose, editing, branches, onSaved, 
                   );
                 })}
               </ScrollView>
-              {trainers.length === 0 && (
+              {trainers.length === 0 && !form.trainerId && (
                 <Text style={styles.hint}>
                   {form.branchCode ? 'No trainers available in this branch.' : 'Select a branch first.'}
                 </Text>

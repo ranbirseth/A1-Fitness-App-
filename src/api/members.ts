@@ -162,15 +162,6 @@ export interface PlanItem {
   branchCode?: string | null;
 }
 
-export interface TrainerItem {
-  _id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  branchCode?: string;
-  status?: string;
-}
-
 export interface PaymentPayload {
   member: string;
   plan: string;
@@ -367,14 +358,6 @@ export async function resumePlan(memberId: string): Promise<MemberItem> {
 export async function getPlans(branchCode?: string, limit = 100): Promise<PlanItem[]> {
   const qs = buildQuery({ branchCode } as Record<string, string | undefined>, limit);
   const res = await api.request<{ data?: { items?: PlanItem[] } }>(`/plans?${qs}`, { auth: true });
-  return res.data?.items ?? [];
-}
-
-export async function getTrainers(branchCode?: string, limit = 100): Promise<TrainerItem[]> {
-  const qs = branchCode
-    ? `branchCode=${encodeURIComponent(branchCode.trim())}&limit=${limit}`
-    : `limit=${limit}`;
-  const res = await api.request<{ data?: { items?: TrainerItem[] } }>(`/trainers?${qs}`, { auth: true });
   return res.data?.items ?? [];
 }
 

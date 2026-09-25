@@ -9,6 +9,7 @@ import { SuperadminDashboardScreen } from '../screens/SuperadminDashboardScreen'
 import { SuperadminBranchesScreen } from '../screens/SuperadminBranchesScreen';
 import { BranchDetailsScreen } from '../screens/BranchDetailsScreen';
 import { SuperadminAdminsScreen } from '../screens/SuperadminAdminsScreen';
+import { SuperadminTrainersScreen } from '../screens/SuperadminTrainersScreen';
 import { SuperadminMembersScreen } from '../screens/SuperadminMembersScreen';
 import { MemberDetailsScreen } from '../screens/MemberDetailsScreen';
 import { SuperadminPlansScreen } from '../screens/SuperadminPlansScreen';
@@ -66,6 +67,7 @@ export default function RootNavigator() {
                   <Stack.Screen name="SuperadminBranches" component={SuperadminBranchesScreen} />
                   <Stack.Screen name="BranchDetails" component={BranchDetailsScreen} />
                   <Stack.Screen name="SuperadminAdmins" component={SuperadminAdminsScreen} />
+                  <Stack.Screen name="SuperadminTrainers" component={SuperadminTrainersScreen} />
                   <Stack.Screen name="SuperadminMembers" component={SuperadminMembersScreen} />
                   <Stack.Screen name="MemberDetails" component={MemberDetailsScreen} />
                   <Stack.Screen name="SuperadminPlans" component={SuperadminPlansScreen} />

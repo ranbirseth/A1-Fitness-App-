@@ -5,6 +5,7 @@ export type AppStackParamList = {
   SuperadminBranches: undefined;
   BranchDetails: { branchId: string };
   SuperadminAdmins: undefined;
+  SuperadminTrainers: undefined;
   SuperadminMembers: undefined;
   MemberDetails: { memberId: string };
   SuperadminPlans: undefined;
